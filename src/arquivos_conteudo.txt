@@ -1,0 +1,285 @@
+Path relativo: pizza/pizzaStore.ts
+----------------------------
+import { PizzaFactory } from './pizzaFactory';
+
+export class PizzaStore {
+    protected pizzaFactory: PizzaFactory;
+    protected porcentagem_de_lucro: number;
+    protected taxa_de_entrega_por_distancia: number;
+    protected nome_do_dono: string;
+
+    constructor(nome_do_dono: string ,pizzaFactory: PizzaFactory, porcentagem_de_lucro: number, taxa_de_entrega_por_distancia: number) {
+        this.nome_do_dono = nome_do_dono;
+        this.pizzaFactory = pizzaFactory;
+        this.porcentagem_de_lucro = porcentagem_de_lucro;
+        this.taxa_de_entrega_por_distancia = taxa_de_entrega_por_distancia;
+    }
+
+    public pedirPizza(sabor: string, distancia_de_entrega: number) {
+        const pizza = this.pizzaFactory.criarPizza(this.nome_do_dono,sabor);
+
+        if (!pizza) {
+            console.log(`Desculpe, não temos a pizza de ${sabor}`);
+            return;
+        }
+
+        const preco_total = pizza.price + (pizza.price * this.porcentagem_de_lucro)+ (distancia_de_entrega * this.taxa_de_entrega_por_distancia);
+        console.log(`${pizza.name} pedida por R$${preco_total}`);
+        return pizza;    
+    }
+}
+
+
+
+Path relativo: pizza/ingrediente.ts
+----------------------------
+export class Ingrediente {
+    public nome: string;
+    public quantidade: number;
+    public descricao: string;
+
+    constructor(nome: string,quantidade: number, descricao: string) {
+        this.nome = nome;
+        this.quantidade = quantidade;
+        this.descricao = descricao;
+    }
+}
+
+export class Tomate extends Ingrediente {
+    constructor(quantidade: number) {
+        super('tomate', quantidade, 'fatias de tomate fresco');
+    }
+}
+
+export class Queijo extends Ingrediente {
+    constructor(quantidade: number) {
+        super('queijo', quantidade, 'queijo mussarela ralado');
+    }
+}
+
+export class Calabresa extends Ingrediente {
+    constructor(quantidade: number) {
+        super('calabresa', quantidade, 'calabresa fresca fatiada');
+    }
+}
+
+export class Massa extends Ingrediente {
+    constructor(quantidade: number) {
+        super('massa', quantidade, 'massa fresca');
+    }
+}
+
+export class Molho extends Ingrediente {
+    constructor(quantidade: number) {
+        super('molho', quantidade, 'molho de tomate');
+    }
+}
+
+export class cebola extends Ingrediente {
+    constructor(quantidade: number) {
+        super('cebola', quantidade, 'cebola fresca');
+    }
+}
+
+export class ovo extends Ingrediente {
+    constructor(quantidade: number) {
+        super('ovo', quantidade, 'ovo cozido fatiado');
+    }
+}
+
+export class Bacon extends Ingrediente {
+    constructor(quantidade: number) {
+        super('bacon', quantidade, 'bacon fatiado');
+    }
+}
+
+
+Path relativo: pizza/pizza.ts
+----------------------------
+import { Ingrediente } from "./ingrediente";
+
+export class Pizza {
+  [x: string]: any;
+  constructor(public name: string, public price: number,public ingredientes: Ingrediente[]) {}
+
+  public ExibeInformacoes() {
+    console.log(`${this.name} com preço de R$${this.price} e ingredientes:`);
+    this.ingredientes.forEach((ingrediente) => {
+      console.log(`- ${ingrediente.quantidade} ${ingrediente.nome} (${ingrediente.descricao})`);
+    });
+  }
+}
+
+
+Path relativo: pizza/pizzaFactory.ts
+----------------------------
+import { Ingrediente } from "./ingrediente";
+import { Receita } from "./receita";
+import { Pizza } from "./pizza"; // Add this line to import Pizza
+
+export class PizzaFactory {
+
+    public livro_de_receita: { [key: string]: Receita };
+
+    constructor(livro_de_receita: { [key: string]: Receita }) {
+        this.livro_de_receita = livro_de_receita;
+    }
+
+    public criarPizza(nome_do_dono: string,sabor: string): Pizza | null {
+        const receita = this.livro_de_receita[sabor];
+        if (receita) {
+            return new Pizza(`${receita.nome} do ${nome_do_dono}`, receita.preco, receita.ingredientes.map((ingrediente) => new Ingrediente(ingrediente.nome, ingrediente.quantidade, ingrediente.descricao)));
+        }
+        return null;
+    }
+}
+
+
+
+Path relativo: pizza/receita.ts
+----------------------------
+import { Ingrediente } from './ingrediente';
+
+export class Receita{
+    public ingredientes: Ingrediente[];
+    public preco: number;
+    public nome: string
+    constructor(nome: string, preco: number,ingredientes: Ingrediente[]){
+        this.ingredientes = ingredientes;
+        this.preco = preco;
+        this.nome = nome;
+    }
+}
+
+
+
+Path relativo: arquivos_conteudo.txt
+----------------------------
+
+
+
+Path relativo: listar.sh
+----------------------------
+#!/bin/bash
+
+# Diretório a ser listado (use o diretório atual se nenhum for especificado)
+DIR=${1:-.}
+
+# Arquivo de saída
+OUTPUT_FILE="arquivos_conteudo.txt"
+
+# Apaga o arquivo de saída se já existir
+> "$OUTPUT_FILE"
+
+# Percorre todos os arquivos do diretório de forma recursiva
+find "$DIR" -type f | while read -r file; do
+    # Obtém o caminho relativo do arquivo
+    relative_path=$(realpath --relative-to="$DIR" "$file")
+
+    # Adiciona o caminho relativo ao arquivo de saída
+    echo "Path relativo: $relative_path" >> "$OUTPUT_FILE"
+    echo "----------------------------" >> "$OUTPUT_FILE"
+
+    # Adiciona o conteúdo do arquivo ao arquivo de saída
+    cat "$file" >> "$OUTPUT_FILE"
+    echo -e "\n\n" >> "$OUTPUT_FILE"
+done
+
+echo "Conteúdo dos arquivos foi gerado em $OUTPUT_FILE"
+
+
+
+Path relativo: app.ts
+----------------------------
+import { PizzaFactory } from './pizza/pizzaFactory';
+import {PizzaStore} from './pizza/pizzaStore';
+import { Receita } from './pizza/receita';
+import { Ingrediente, Massa, Tomate, Calabresa,Molho,Queijo,cebola,ovo, Bacon } from './pizza/ingrediente';
+import { console } from 'inspector';
+import * as readline from 'readline';
+
+
+
+const livroDeReceitasDoBrancas = {
+    "marguerita": new Receita('Pizza quadrada de Marguerita', 20, [
+        new Massa(1),
+        new Tomate(2),
+        new Queijo(3),
+    ]),
+    "calabresa": new Receita('Pizza quadrada de Calabresa', 25, [
+        new Massa(1),
+        new Tomate(2),
+        new Queijo(3),
+        new Calabresa(3),
+    ]),
+    "portuguesa": new Receita('Pizza quadrada de Portuguesa', 30, [
+        new Massa(1),
+        new Tomate(2),
+        new Queijo(3),
+        new Calabresa(2),
+        new cebola(5),
+        new ovo(2),
+    ]),
+
+};
+
+const livroDeReceitasNormal = {
+    "marguerita": new Receita('Pizza redonda de Marguerita', 20, [
+        new Massa(1),
+        new Tomate(1),
+        new Queijo(2),
+    ]),
+    "calabresa": new Receita('Pizza redonda de Calabresa', 25, [
+        new Massa(1),
+        new Tomate(1),
+        new Queijo(1),
+        new Calabresa(1),
+    ]),
+    "bacon": new Receita('Pizza redonda de Bacon', 30, [
+        new Massa(1),
+        new Tomate(1),
+        new Queijo(2),
+        new Bacon(4),
+    ]),
+}
+
+const pizzariaDoBrancas = new PizzaStore("branco",new PizzaFactory(livroDeReceitasDoBrancas),0.5,0.3);
+
+
+const pizzariaNormal = new PizzaStore("professor bossini",new PizzaFactory(livroDeReceitasNormal),0.2,0.4);
+
+const lerEntrada = (prompt: string): Promise<string> => {
+    return new Promise((resolve) => {
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+        rl.question(prompt, (resposta) => {
+            rl.close();
+            resolve(resposta);
+        });
+    });
+};
+
+// Função principal de interação
+async function interagirComUsuario() {
+    while (true) {
+        const pizzariaEscolhida = await lerEntrada('Qual pizzaria você quer pedir (1 - Brancas, 2 - Normal)? ');
+        const pizzaria = pizzariaEscolhida === '1' ? pizzariaDoBrancas : pizzariaNormal;
+
+        const distanciaStr = await lerEntrada('Quantos km de distância da pizzaria? ');
+        const distancia = parseFloat(distanciaStr);
+
+        const sabor = await lerEntrada('Qual o sabor da pizza que você quer? ');
+        const pizza = pizzaria.pedirPizza(sabor, distancia);
+
+        const opcao = await lerEntrada('Você quer reiniciar (1) ou encerrar (2)? ');
+        if (opcao !== '1') break;
+    }
+}
+
+// Iniciar interação com o usuário
+interagirComUsuario();
+
+
+
